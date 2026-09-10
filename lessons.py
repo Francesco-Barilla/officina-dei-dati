@@ -4,21 +4,26 @@ from engine import assign as a, generate, output as o, set_var as s
 from missions import c
 
 HOW_TO_PLAY = '''IMPARA FACENDO
-Leggi gli ingressi e la riga evidenziata. Prevedi il prossimo valore, indicando anche il suo tipo. La sonda percorre il nastro e mostra cosa è cambiato in memoria o sullo schermo. Una risposta errata aggiunge un indizio: puoi riprovare. Dopo l’osservazione scegli Prossima previsione. Cambia gli ingressi per mettere alla prova la stessa regola.
+1. Guarda la riga grande a sinistra e i valori nel riquadro Da usare o Ingresso da leggere.
+2. Scegli a destra il valore che otterrai, insieme al suo tipo.
+3. Se compare Da rivedere, leggi l'indizio e riprova: il programma resta fermo. Se compare Corretto, osserva cosa ? cambiato e premi Ho capito ? passo successivo.
+Alla fine trovi la regola e l'errore da evitare. Ora costruisci tu la sequenza apre la stessa missione in Gioca. Le frecce Esempio permettono di cambiare gli ingressi.
 
-GIOCA · FACILE
-Le istruzioni sono mescolate. Clicca una tessera e poi un’altra per scambiarle, oppure usa le frecce della tessera selezionata. Leggi prima la consegna: possono esistere più ordini corretti. Esegui mostra il risultato sul caso visibile. Verifica tutte le sonde controlla anche gli altri casi, le variabili richieste, i tipi e l’ordine delle uscite.
+GIOCA ? FACILE
+Leggi la missione in alto e il risultato richiesto a destra. Sposta le tessere con le frecce accanto a ciascuna riga; puoi anche cliccare due tessere per scambiarle. Il programma va dall'alto verso il basso. Usa la rotella o Scorri per i programmi lunghi.
+Premi Controlla la mia sequenza. Da correggere mostra la riga problematica o un confronto tra richiesto e ottenuto. Modifica il programma e ricontrolla. Missione completata permette di andare alla prossima sfida.
 
-GIOCA · MEDIO E DIFFICILE
-Medio propone codice da completare nei punti ???. Difficile offre una pagina da scrivere. Il comando Dati e comandi rimane disponibile. Esegui, Pausa, Un passo e Ricomincia permettono di vedere lo stato dopo ogni istruzione. Un programma errato non viene premiato.
+GIOCA ? MEDIO E DIFFICILE
+Medio: clicca nel codice e completa i ???. Difficile: scrivi il programma. Comandi e tipi contiene gli ingressi disponibili e gli esempi di sintassi.
+Controlla la mia sequenza verifica tutti gli esempi previsti dalla missione, compresi tipi, variabili, ingressi e ordine delle uscite. La voce Guarda l'esecuzione passo per passo permette invece di osservare ogni istruzione senza assegnare un completamento.
 
 IL BANCO DEI TIPI
-Scegli int, float, string o bool; scrivi un valore e osserva il contenuto della cella. Prova 5 come intero e come stringa, oppure false come booleano e come testo. Il codice mostra la rappresentazione nel linguaggio scelto.
+Dalla Home scegli Banco dei tipi. Scegli int, float, string o bool; scrivi un valore e osserva la cella. Prova 5 come intero e come stringa, oppure false come booleano e come testo.
 
-SCOVA L’EQUIVOCO
-Qui devi prevedere il codice mostrato, anche se contiene un errore. Solo dopo la risposta parte la traccia. La spiegazione collega il risultato all’ordine e ai dati effettivi.
+SCOVA L'EQUIVOCO
+Leggi il programma a sinistra. Seleziona una previsione a destra e premi Controlla. Corretto oppure Da rivedere restano visibili insieme alla spiegazione. Una nuova scelta richiede un nuovo controllo. Rivedi l'esecuzione mostra il risultato; Spiegazione completa apre tutti i dettagli.
 
-Non c’è un cronometro. Le sfide sono tutte accessibili. Aprire una scheda, le impostazioni o il banco mette in pausa il nastro. Le bozze sono separate per missione, lingua e difficoltà; consultare una soluzione non le sostituisce e non assegna completamenti.'''
+Non c'? un cronometro. Le sfide sono tutte accessibili. Aprire schede, impostazioni o banco mette in pausa l'animazione. Le bozze restano separate per missione, lingua e difficolt?. Leggere una soluzione non modifica la bozza e non assegna completamenti.'''
 
 TYPES_NOTES = '''INT · CONTARE
 Un intero rappresenta quantità senza parte frazionaria: -3, 0, 12. Le virgolette cambiano il significato: "12" è testo. I nomi della variabile non ne stabiliscono il tipo.
@@ -125,5 +130,5 @@ QUIZZES = (
     Quiz('number', 'Quattro linguaggi, stessi nomi?', (s('a', 'int', '2'), s('b', 'float', '2.0'), o('a'), o('b')), 'int e float sono due tipi nativi distinti anche in JavaScript?', ('Sì, in tutti e quattro', 'No: JavaScript usa number per entrambi', 'No: JavaScript usa string'), 1, 'Le categorie didattiche intero/decimale non introducono tipi che il linguaggio non possiede. JavaScript usa number.'),
     Quiz('confronto', 'La risposta si ricalcola da sola?', (s('peso', 'int', '9'), s('leggero', 'bool', 'peso <= 10'), a('peso', '20'), o('leggero')), 'Alla fine leggero è ancora vero?', ('Sì: il confronto era stato calcolato con 9', 'No: segue automaticamente peso', 'Non si può memorizzare un confronto'), 0, 'L’assegnazione conserva il risultato vero. Per aggiornarlo occorre eseguire di nuovo il confronto e assegnarlo.'),
     Quiz('stampa', 'Mostrare consuma il dato?', (s('x', 'int', '2'), o('x'), o('x')), 'Quali uscite si ottengono?', ('2 e 3', '2 e poi niente', '2 e 2'), 2, 'Mostrare legge x senza modificarla. La seconda uscita legge ancora 2.'),
-    Quiz('prima', 'Una variabile ancora vuota?', (o('casse'), s('casse', 'int', '3')), 'La prima riga può leggere il valore assegnato dopo?', ('Sì: trova 3', 'Sì: usa automaticamente 0', 'No: manca un valore disponibile'), 2, 'Le istruzioni non tornano indietro nel tempo. Python/JavaScript incontrano una lettura non disponibile; C/Java richiedono una dichiarazione valida prima dell’uso.'),
+    Quiz('prima', 'Una variabile ancora vuota?', (o('casse'), s('casse', 'int', '3')), 'La prima riga può leggere il valore assegnato dopo?', ('Sì: trova 3', 'Sì: usa automaticamente 0', 'No: manca un valore disponibile'), 2, 'La prima riga usa casse prima che esista. La riga 2 non viene anticipata: non si ottiene né 3 né 0.'),
 )

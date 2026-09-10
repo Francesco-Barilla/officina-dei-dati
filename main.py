@@ -13,7 +13,8 @@ import pygame
 
 from engine import CodeError, Frame, LANGUAGES, TYPES, display, execute, generate, literal, source_line, type_name, value
 from lessons import HOW_TO_PLAY, MISCONCEPTIONS, QUIZZES, TYPES_NOTES, commands_text
-from missions import BY_KEY, DIFFICULTIES, GROUPS, MISSIONS, validate
+from missions import BY_KEY, DIFFICULTIES, GROUPS, MISSIONS, compare_case, validate
+from experience import LabExperience
 from scene import TYPE_COLORS, background, conveyor, icon
 import storage
 from ui import SIZE, THEMES, Editor, font, lines, mix, palette, panel, text, wrap
@@ -21,7 +22,7 @@ from ui import SIZE, THEMES, Editor, font, lines, mix, palette, panel, text, wra
 TITLE = 'Officina dei dati'
 
 
-class App:
+class App(LabExperience):
     def __init__(self, screen, state_path=None, saving=True):
         self.screen, self.canvas = screen, pygame.Surface(SIZE)
         self.state_path, self.saving = state_path, saving
@@ -31,10 +32,12 @@ class App:
         self.page, self.return_page, self.mode = 'home', 'home', 'learn'
         self.filter, self.catalog_page, self.case_index = 'Tutte', 0, 0
         self.editor, self.modal_editor = Editor(), Editor()
+        self.trace_editor = Editor()
         self.code_rect = pygame.Rect(742, 282, 658, 331)
         self.frames, self.frame_index = [], 0
         self.progress, self.playing, self.auto, self.time = 1, False, False, 0
         self.feedback, self.review, self.error_line = '', None, 0
+        self.feedback_kind, self.result_scroll = 'neutral', 0
         self.order, self.selected, self.block_scroll, self.memory_page = [], None, 0, 0
         self.prediction_options, self.prediction_answered, self.prediction_choice = [], False, None
         self.quiz_index, self.quiz_choice, self.quiz_attempted = 0, None, False
@@ -86,6 +89,7 @@ class App:
     def invalidate(self):
         self.frames, self.frame_index, self.playing, self.progress = [], 0, False, 1
         self.feedback, self.review, self.error_line = '', None, 0
+        self.feedback_kind, self.result_scroll = 'neutral', 0
         self.memory_page = 0
 
     def shuffled_order(self):
@@ -161,7 +165,8 @@ class App:
 
     def prepare_prediction(self):
         self.prediction_answered, self.prediction_choice = False, None
-        self.feedback = 'Leggi la riga evidenziata e prevedi il valore insieme al suo tipo.'
+        self.feedback_kind = 'neutral'
+        self.feedback = 'Scegli una risposta: il programma aspetta te.'
         self.prediction_options = []
         if self.frame_index + 1 >= len(self.frames):
             return
@@ -191,19 +196,27 @@ class App:
         self.prediction_choice = index
         expected = self.frames[self.frame_index + 1]
         if not self.equivalent(self.prediction_options[index], expected.after):
-            self.feedback = 'Riprova: leggi i valori attuali e controlla il tipo. La cella cambia solo quando la riga viene eseguita.'
+            self.feedback_kind = 'wrong'
+            chosen = self.prediction_options[index]
+            if type_name(chosen, self.language) != type_name(expected.after, self.language):
+                self.feedback = f'Il tipo non coincide: hai scelto {type_name(chosen, self.language)}. Qui serve {type_name(expected.after, self.language)}. Controlla anche le virgolette.'
+            else:
+                self.feedback = f'Hai scelto {display(chosen, self.language)}. ' + self.prediction_hint(expected)
             return
         self.prediction_answered = True
         self.frame_index += 1
         self.progress, self.playing, self.auto = 0, True, False
+        self.feedback_kind = 'correct'
         self.feedback = expected.message
         self.reveal_frame()
 
     def reveal_frame(self):
         if self.frame.line:
-            visible = max(1, self.code_rect.height // (self.state['size'] + 8) - 1)
-            if self.frame.line - 1 < self.editor.scroll or self.frame.line - 1 >= self.editor.scroll + visible:
-                self.editor.scroll = max(0, self.frame.line - 3)
+            editor = self.trace_editor if self.modal == 'trace' else self.editor
+            rect = editor.rect if self.modal == 'trace' else self.code_rect
+            visible = max(1, (rect.height - 16) // (editor.size + 8))
+            if self.frame.line - 1 < editor.scroll or self.frame.line - 1 >= editor.scroll + visible:
+                editor.scroll = max(0, self.frame.line - visible)
         if self.frame.target:
             self.memory_page = list(dict(self.frame.memory)).index(self.frame.target) // 4
 
@@ -226,15 +239,21 @@ class App:
         self.persist()
         self.playing = False
         self.review = validate(self.mission, self.code(), self.language)
-        message = self.review.message
+        self.result_scroll = 0
+        if self.review.case:
+            self.case_index = self.mission.cases.index(self.review.case)
+        execution, rows = compare_case(self.mission, self.code(), self.language, self.case)
+        self.review.rows = rows
+        self.frames, self.frame_index = execution.frames, len(execution.frames) - 1
+        self.progress, self.auto = 1, False
+        self.error_line = execution.error.line if execution.error else 0
+        self.feedback_kind = 'correct' if self.review.success else 'wrong'
+        self.feedback = self.review.message
+        self.reveal_frame()
         if self.review.success:
             if self.key() not in self.state['completed']:
                 self.state['completed'].append(self.key())
             self.persist()
-        elif self.review.case:
-            self.case_index = self.mission.cases.index(self.review.case)
-            self.start_trace(False)
-        self.feedback = message
 
     def move_card(self, index):
         if self.selected is None or not 0 <= index < len(self.order):
@@ -243,7 +262,7 @@ class App:
         self.selected = index
         self.invalidate()
         self.editor.set(self.code())
-        self.block_scroll = max(0, (index - 4) * 54)
+        self.block_scroll = max(0, (index - 4) * 74)
         self.persist()
 
     def open_quiz(self, index):
@@ -348,131 +367,6 @@ class App:
         self.button('catalog_page:1', 'Altre sfide →', (1175, 799, 225, 45), active=self.catalog_page + 1 < pages)
         text(self.canvas, f'{len(items)} sfide · pagina {self.catalog_page + 1} / {pages}', (720, 822), 19, self.c['muted'], anchor='center')
 
-    def draw_memory(self):
-        memory = list(self.frame.memory)
-        panel(self.canvas, pygame.Rect(40, 461, 660, 155), self.c['panel'], self.c['border'], 13)
-        pages = max(1, (len(memory) + 3) // 4)
-        self.memory_page = max(0, min(self.memory_page, pages - 1))
-        text(self.canvas, 'MEMORIA · nome, tipo, valore attuale', (55, 469), 14, self.c['muted'], True)
-        if pages > 1:
-            self.button('memory', f'{self.memory_page + 1}/{pages} →', (606, 465, 80, 24), size=13)
-        if not memory:
-            text(self.canvas, 'Le celle si riempiranno durante l’esecuzione.', (64, 532), 21, self.c['muted'])
-        for i, (name, item) in enumerate(memory[self.memory_page * 4:(self.memory_page + 1) * 4]):
-            rect = pygame.Rect(52 + (i % 2) * 324, 491 + i // 2 * 59, 312, 53)
-            changed = name == self.frame.target
-            color = self.c[TYPE_COLORS[item.kind]]
-            panel(self.canvas, rect, self.c['bg'], color if changed else self.c['border'], 7)
-            text(self.canvas, name, (rect.x + 10, rect.y + 5), 14, self.c['muted'])
-            text(self.canvas, type_name(item, self.language), (rect.right - 10, rect.y + 5), 13, color, True, 'topright')
-            label = display(item, self.language)
-            wrap(self.canvas, label, pygame.Rect(rect.x + 10, rect.y + 23, 292, 26), 19, self.c['text'], True)
-
-    def draw_io(self, quiz=False):
-        inputs = () if quiz else self.case.inputs
-        for left, label in ((40, 'INGRESSI · nell’ordine della fila'), (375, 'USCITE · nell’ordine di comparsa')):
-            panel(self.canvas, pygame.Rect(left, 630, 325, 96), self.c['panel'], self.c['border'], 12)
-            text(self.canvas, label, (left + 12, 639), 13, self.c['muted'], True)
-        if not inputs:
-            text(self.canvas, 'Valori già scritti nel codice.', (52, 674), 16, self.c['muted'])
-        for i, item in enumerate(inputs):
-            if item.kind == 'float' and self.language in ('C', 'Java'):
-                item = value(item.data, 32)
-            label = ('OK ' if i < self.frame.consumed else '→ ' if i == self.frame.consumed else '  ') + display(item, self.language) + ' · ' + type_name(item, self.language)
-            text(self.canvas, label, (52, 660 + i * 16), 14, self.c['muted'] if i < self.frame.consumed else self.c[TYPE_COLORS[item.kind]])
-        outputs = self.frame.outputs
-        if not outputs:
-            text(self.canvas, 'Ancora nessuna uscita.', (387, 674), 16, self.c['muted'])
-        else:
-            for i, item in enumerate(outputs[-4:]):
-                label = f'{len(outputs) - len(outputs[-4:]) + i + 1}. ' + display(item, self.language) + ' · ' + type_name(item, self.language)
-                wrap(self.canvas, label, pygame.Rect(387, 660 + i * 16, 298, 17), 14, self.c[TYPE_COLORS[item.kind]])
-
-    def draw_cards(self):
-        rect = self.code_rect
-        panel(self.canvas, rect, self.c['bg'], self.c['border'], 10)
-        total = len(self.order) * 54
-        self.block_scroll = max(0, min(self.block_scroll, max(0, total - rect.height + 12)))
-        clip = self.canvas.get_clip()
-        self.canvas.set_clip(rect.inflate(-4, -4).clip(clip))
-        for i, original in enumerate(self.order):
-            item = self.mission.instructions[original]
-            row = pygame.Rect(rect.x + 10, rect.y + 7 + i * 54 - self.block_scroll, rect.width - 25, 47)
-            color = self.c[TYPE_COLORS[item.kind]] if item.kind else self.c['blue'] if not item.target else self.c['mint']
-            panel(self.canvas, row, self.c['card'], self.c['accent'] if self.selected == i else color if self.frame.line == i + 1 else self.c['border'], 8)
-            tag = f'{i + 1:02} · ' + ('MOSTRA' if not item.target else 'INIZIALIZZA' if item.kind else 'AGGIORNA')
-            text(self.canvas, tag, (row.x + 11, row.y + 3), 11, color, True)
-            text(self.canvas, source_line(item, self.language), (row.x + 11, row.y + 21), 16, self.c['text'], mono=True)
-            hit = row.clip(rect.inflate(-4, -4))
-            if hit.height:
-                self.buttons.append(('card:' + str(i), hit, True))
-        self.canvas.set_clip(clip)
-        if total > rect.height:
-            height = rect.height * rect.height / total
-            y = rect.y + (rect.height - height) * self.block_scroll / max(1, total - rect.height + 12)
-            panel(self.canvas, pygame.Rect(rect.right - 7, y, 3, height), self.c['muted'], radius=2)
-
-    def draw_lab(self, quiz=False):
-        learn = not quiz and self.mode == 'learn'
-        self.header('Scova l’equivoco · prima prevedi, poi osserva' if quiz else 'Impara facendo · leggi, prevedi, osserva' if learn else 'Gioca · rimetti in ordine il programma della sonda')
-        text(self.canvas, self.quiz.title if quiz else self.mission.title, (40, 107), 28, self.c['text'], True)
-        self.selectors(quiz)
-        panel(self.canvas, pygame.Rect(40, 151, 660, 98), self.c['panel'], self.c['border'], 12)
-        wrap(self.canvas, self.quiz.question if quiz else self.mission.objective, pygame.Rect(56, 164, 628, 75), 18, self.c['text'])
-        conveyor(self.canvas, pygame.Rect(40, 264, 660, 145), self.c, self.time, self.frame if self.frame_index else None, self.progress, self.language)
-        if not quiz:
-            self.button('case:-1', '‹', (40, 419, 40, 31), size=22)
-            self.button('case:1', '›', (660, 419, 40, 31), size=22)
-            text(self.canvas, f'{self.case_index + 1}/{len(self.mission.cases)} · {self.case.label}', (370, 435), 17, self.c['text'], anchor='center')
-        else:
-            text(self.canvas, 'Le uscite appariranno dopo la tua previsione.', (40, 425), 17, self.c['muted'])
-        self.draw_memory()
-        self.draw_io(quiz)
-        panel(self.canvas, pygame.Rect(40, 737, 660, 108), self.c['panel'], self.c['mint'] if self.review and self.review.success else self.c['border'], 12)
-        text(self.canvas, 'IL PERCHÉ DEL PASSO', (55, 748), 13, self.c['accent'], True)
-        self.button('details', 'Leggi', (604, 743, 82, 28), size=14)
-        wrap(self.canvas, self.feedback or self.frame.message, pygame.Rect(56, 775, 628, 63), 17, self.c['text'])
-        self.button('commands', 'Dati e comandi', (742, 243, 210, 32), size=16)
-        if self.easy and not quiz:
-            self.button('move:-1', '↑', (972, 243, 61, 32), active=self.selected is not None and self.selected > 0)
-            self.button('move:1', '↓', (1043, 243, 61, 32), active=self.selected is not None and self.selected < len(self.order) - 1)
-            self.button('solution', 'Una soluzione', (1116, 243, 284, 32), size=16)
-            self.draw_cards()
-        else:
-            if not quiz:
-                self.button('solution', 'Guarda la sequenza completa', (982, 243, 418, 32), size=16)
-            active = self.frames[self.frame_index + 1].line if learn and not self.prediction_answered and self.frame_index + 1 < len(self.frames) else self.frame.line
-            self.editor.draw(self.canvas, self.code_rect, self.c, active=active, error=self.error_line, readonly=learn or quiz, tick=self.time, size=self.state['size'])
-        if quiz:
-            for i, choice in enumerate(self.quiz.choices):
-                self.button('answer:' + str(i), choice, (742, 630 + i * 52, 658, 45), selected=self.quiz_choice == i, size=18)
-            self.button('check', 'Verifica previsione', (742, 797, 214, 47), active=self.quiz_choice is not None, primary=True, size=17)
-            self.button('run', 'Pausa' if self.playing else 'Esegui', (967, 797, 207, 47), active=self.quiz_attempted)
-            self.button('next_quiz', 'Prossimo equivoco', (1185, 797, 215, 47), size=17)
-        elif learn:
-            next_frame = self.frames[self.frame_index + 1] if self.frame_index + 1 < len(self.frames) else None
-            if not self.prediction_answered and next_frame:
-                prompt = f'Quale valore riceverà {next_frame.target}?' if next_frame.target else 'Quale valore comparirà sullo schermo?'
-            else:
-                prompt = 'Osserva il dato che è cambiato, poi continua.' if next_frame else 'Sequenza completata! Provala con altri ingressi.'
-            wrap(self.canvas, prompt, pygame.Rect(742, 631, 658, 42), 21, self.c['text'], True)
-            for i, item in enumerate(self.prediction_options):
-                label = display(item, self.language) + ' · ' + type_name(item, self.language)
-                self.button('predict:' + str(i), label, (742 + i * 222, 682, 214, 50), active=not self.prediction_answered, selected=self.prediction_choice == i, size=16)
-            paused = self.prediction_answered and not self.playing and self.progress < 1
-            self.button('resume' if paused else 'next_prediction', 'Riprendi il nastro' if paused else 'Prossima previsione' if next_frame else 'Prova altri ingressi', (742, 747, 322, 40), active=self.prediction_answered and not self.playing, size=17)
-            self.button('idea', 'Perché? · regola ed equivoco', (1076, 747, 324, 40), size=17)
-            self.button('try', 'Ora costruisci tu la sequenza', (742, 798, 658, 46), primary=True)
-        else:
-            hint = 'Clicca due tessere per scambiarle. Rotella per scorrere.' if self.easy else 'Scrivi il frammento; il tipo e il valore saranno visibili in memoria.'
-            text(self.canvas, hint, (742, 628), 16, self.c['muted'])
-            self.button('run', 'Pausa' if self.playing else 'Esegui', (742, 660, 214, 45), primary=True)
-            self.button('step', 'Un passo', (967, 660, 207, 45))
-            self.button('restart', 'Ricomincia', (1185, 660, 215, 45))
-            self.button('verify', 'Verifica tutte le sonde', (742, 722, 658, 53), primary=True)
-            self.button('learn', 'Impara facendo', (742, 798, 322, 46))
-            self.button('shuffle' if self.easy else 'idea', 'Mescola le tessere' if self.easy else 'Regola ed equivoco', (1076, 798, 324, 46))
-
     def bank_value(self):
         raw = self.bank_fields[self.bank_kind].value
         try:
@@ -543,6 +437,9 @@ class App:
         self.button('return', 'Torna al laboratorio', (870, 723, 350, 45), primary=True)
 
     def draw_modal(self):
+        if self.modal == 'trace':
+            self.draw_trace()
+            return
         veil = pygame.Surface(SIZE, pygame.SRCALPHA)
         veil.fill((0, 0, 0, 175))
         self.canvas.blit(veil, (0, 0))
@@ -597,6 +494,12 @@ class App:
     def action(self, key):
         if key == 'close':
             self.modal = None
+        elif key == 'trace_view':
+            self.editor.focus = False
+            self.start_trace(False)
+            self.frame_index, self.progress, self.playing = 0, 1, False
+            self.trace_editor.set(self.code())
+            self.modal = 'trace'
         elif key in ('help', 'types', 'commands', 'idea', 'details', 'solution'):
             if key == 'help':
                 self.open_text('Come si gioca', HOW_TO_PLAY)
@@ -665,6 +568,25 @@ class App:
                     self.action('case:1')
         elif key == 'resume':
             self.playing = True
+        elif key.startswith('shift:'):
+            _, row, delta = key.split(':')
+            row, destination = int(row), int(row) + int(delta)
+            if 0 <= row < len(self.order) and 0 <= destination < len(self.order):
+                self.selected = row
+                self.move_card(destination)
+                self.selected = None
+        elif key.startswith('cards_scroll:'):
+            self.block_scroll += int(key.split(':')[1]) * 222
+        elif key == 'next_mission':
+            index = MISSIONS.index(self.mission)
+            if index + 1 < len(MISSIONS):
+                self.open_mission(MISSIONS[index + 1].key)
+            else:
+                self.action('catalog')
+        elif key.startswith('results:'):
+            self.result_scroll = max(0, self.result_scroll + int(key.split(':')[1]))
+        elif key == 'program':
+            self.open_text('Il programma completo ? ' + self.language, self.mission.solution(self.language), True)
         elif key.startswith('card:'):
             index = int(key.split(':')[1])
             if self.selected is None or self.selected == index:
@@ -702,6 +624,8 @@ class App:
             self.memory_page = (self.memory_page + 1) % max(1, (len(self.frame.memory) + 3) // 4)
         elif key.startswith('answer:'):
             self.quiz_choice = int(key.split(':')[1])
+            self.quiz_attempted = False
+            self.invalidate()
         elif key == 'check':
             self.check_quiz()
         elif key == 'next_quiz':
@@ -758,7 +682,9 @@ class App:
                 self.action(target)
             self.pressed = None
         if event.type == pygame.MOUSEWHEEL:
-            if self.modal:
+            if self.modal == 'trace':
+                self.trace_editor.scroll = max(0, self.trace_editor.scroll - event.y * 3)
+            elif self.modal:
                 self.modal_scroll -= event.y * (3 if self.modal == 'code' else 75)
             elif self.page in ('lab', 'quiz') and self.code_rect.collidepoint(self.pointer):
                 if self.easy and self.page == 'lab':
@@ -883,6 +809,42 @@ def smoke(report, screenshots=None):
     app.start_trace(False)
     app.frame_index = len(app.frames) - 1
     capture('10-quattro-tipi-java')
+    app.action('learn')
+    app.set_language('Python')
+    app.open_mission('interi', 1)
+    app.choose_prediction(next(i for i, item in enumerate(app.prediction_options) if item.data != 3))
+    capture('11-impara-riprova')
+    app.open_mission('copia')
+    while app.frame_index < len(app.frames) - 1:
+        app.choose_prediction(next(i for i, item in enumerate(app.prediction_options) if app.equivalent(item, app.frames[app.frame_index + 1].after)))
+        app.update(3)
+        if app.frame_index < len(app.frames) - 1:
+            app.action('next_prediction')
+    capture('12-lezione-completata')
+    app.action('try')
+    app.set_difficulty('Facile')
+    app.open_mission('ordine')
+    app.order = [2, 1, 0]
+    app.verify()
+    capture('13-gioca-risultato-errato')
+    app.open_mission('copia')
+    app.order = [1, 0, 2, 3, 4]
+    app.verify()
+    capture('14-gioca-errore-riga')
+    app.order = [0, 1, 2, 3, 4]
+    app.invalidate()
+    app.action('trace_view')
+    app.action('step')
+    capture('15-esecuzione-passo-passo')
+    app.action('close')
+    app.set_difficulty('Medio')
+    app.open_mission('interi')
+    capture('16-completa-il-codice')
+    app.set_difficulty('Facile')
+    app.set_language('Java')
+    app.open_mission('sonda')
+    app.block_scroll = 10000
+    capture('17-sequenza-lunga-java')
     Path(report).parent.mkdir(parents=True, exist_ok=True)
     Path(report).write_text(json.dumps(dict(ok=True, missions=len(MISSIONS), quizzes=len(QUIZZES), languages=list(LANGUAGES), render_checks=checks)), encoding='utf-8')
 

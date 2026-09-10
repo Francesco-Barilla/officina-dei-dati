@@ -8,14 +8,16 @@ La versione Windows funziona offline, senza Python, compilatori o account.
 
 IMPARA FACENDO
 Scegli una missione, leggi la riga evidenziata e prevedi valore e tipo.
-Osserva il nastro, la memoria e lo schermo, poi passa alla previsione successiva.
+Da rivedere: leggi l’indizio e riprova. Corretto: osserva la memoria e lo schermo.
+Premi Ho capito · passo successivo. Alla fine trovi regola ed errore da evitare.
 Cambia caso per capire come la stessa sequenza usa ingressi diversi.
 
 GIOCA
 Facile: riordina le tessere cliccandone due, oppure con le frecce.
 Medio: completa ???. Difficile: scrivi il programma.
-Esegui mostra il caso attuale; Verifica tutte le sonde controlla i casi dichiarati,
-anche i tipi, le variabili richieste e l'ordine delle uscite.
+Controlla la mia sequenza mostra Missione completata oppure Da correggere,
+con il confronto richiesto/ottenuto. Controlla tutti gli esempi, i tipi e le variabili.
+Guarda l’esecuzione passo per passo permette di osservare le singole righe.
 Le missioni sono 16. Non c'è un limite di tempo.
 
 BANCO DEI TIPI

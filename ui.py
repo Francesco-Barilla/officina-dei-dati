@@ -1,5 +1,7 @@
 """Shared interface primitives, vector drone and a small code editor."""
 import math
+import os
+from pathlib import Path
 from functools import lru_cache
 import pygame
 
@@ -17,7 +19,10 @@ def palette(theme):
 
 @lru_cache(maxsize=100)
 def font(size, bold=False, mono=False):
-    return pygame.font.SysFont('consolas' if mono else 'segoeui', size, bold=bold)
+    # SysFont can select Segoe UI Light on Windows; body text needs a regular face.
+    name = ('consolab.ttf' if bold else 'consola.ttf') if mono else ('segoeuib.ttf' if bold else 'segoeui.ttf')
+    path = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Fonts' / name
+    return pygame.font.Font(str(path), size) if path.is_file() else pygame.font.SysFont('consolas' if mono else 'segoeui', size, bold=bold)
 
 
 def text(surface, value, pos, size, color, bold=False, anchor='topleft', mono=False):

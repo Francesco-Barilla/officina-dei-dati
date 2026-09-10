@@ -3,10 +3,11 @@
 Laboratorio offline sul **costrutto sequenziale** e sui dati **int, float,
 string, bool**. Realizzato dal **Prof. Barillà Francesco**.
 
-Una sonda percorre un nastro di lavorazione: ingressi, memoria, uscite.
-Ogni istruzione usa i valori lasciati dalla precedente. Le celle mostrano
-nome, tipo e valore; lo schermo conserva le uscite nell'ordine in cui appaiono.
-Lo stile e i percorsi riprendono gli altri laboratori della raccolta.
+Ogni istruzione usa i valori lasciati dalla precedente. In **Impara** osservi
+una riga, scegli una risposta e scopri cosa cambia. In **Gioca** costruisci
+la sequenza e confronti il risultato richiesto con quello ottenuto.
+
+![Impara: una riga, una domanda, un riscontro](screenshots/11-impara-riprova.png)
 
 ## Avvio
 
@@ -21,27 +22,35 @@ laboratorio è nella cartella `struttura_sequenziale`, separata dagli altri.
 
 ## Impara facendo, Gioca, Scova l'equivoco
 
-- **Impara facendo**: leggi la riga evidenziata e prevedi il prossimo valore
-  insieme al suo tipo. Una risposta errata permette di riprovare. Dopo la
-  risposta corretta, osserva il movimento della sonda e il cambiamento in
-  memoria. Continua una riga alla volta, poi cambia caso e ripeti l'esperimento.
-  Le soluzioni consultate e le previsioni guidate non assegnano il completamento
-  delle missioni di programmazione.
-- **Gioca / Facile**: rimetti in ordine le tessere. Clicca due tessere per
-  scambiarle, oppure selezionane una e usa le frecce. La rotella scorre i
-  programmi lunghi. Possono esistere più ordini corretti: conta il comportamento.
-- **Gioca / Medio**: completa i punti `???` del programma. **Difficile**:
-  scrivi il frammento. Esegui/Pausa, Un passo e Ricomincia mostrano lo stato
-  dopo le singole istruzioni. Dati e comandi resta sempre disponibile.
-- **Scova l'equivoco**: 16 previsioni su copie, aggiornamenti, divisioni,
-  stringhe e ordine. Prevedi esattamente il codice mostrato, anche se contiene
-  un errore; dopo la risposta si attiva la traccia.
+- **Impara facendo**: una riga grande a sinistra, i dati da usare e una
+  domanda a destra. **Da rivedere** spiega come riprovare; **Corretto** mostra
+  il nuovo valore. Premi **Ho capito · passo successivo** quando sei pronto.
+  Alla fine leggi la regola e l'errore comune, poi prova la stessa missione in
+  Gioca. I pulsanti **Esempio** cambiano gli ingressi. Consultare lezioni e
+  soluzioni non assegna completamenti di programmazione.
+- **Gioca / Facile**: sposta le tessere con le frecce accanto a ogni riga,
+  oppure cliccane due per scambiarle. Rotella e **Scorri** rendono accessibili
+  i programmi lunghi. Possono esistere più ordini corretti.
+- **Gioca / Medio**: completa i punti `???`. **Difficile**: scrivi il
+  frammento. **Comandi e tipi** contiene sintassi e ingressi disponibili.
+- **Scova l'equivoco**: seleziona una previsione, premi **Controlla** e leggi
+  il riscontro. Il codice viene eseguito dopo il controllo; una nuova scelta
+  richiede un nuovo controllo.
 
-**Verifica tutte le sonde** controlla i casi dichiarati della missione: letture,
-variabili richieste, tipi, valori finali e ordine delle uscite. Se fallisce,
-mostra il caso da ricontrollare. Le missioni hanno da uno a cinque casi scelti
-per evidenziare differenze e confini: non è una dimostrazione su tutti i numeri
-possibili. I risultati decimali ammettono una piccola tolleranza di confronto.
+**Controlla la mia sequenza** verifica tutti gli esempi della missione:
+letture, variabili richieste, tipi, valori e ordine delle uscite. Se qualcosa
+non corrisponde, mostra **Da correggere**, il primo caso problematico e i
+valori **richiesto / ottenuto**. Gli errori nel codice evidenziano la riga.
+Il risultato resta visibile finché modifichi il programma o cambi esempio.
+
+**Guarda l'esecuzione passo per passo** apre una vista distinta: puoi seguire
+le righe, vedere memoria e schermo e poi tornare al gioco. Osservare questa
+esecuzione non assegna il completamento della missione.
+
+Le missioni hanno da uno a cinque esempi scelti: la verifica non è una prova
+su tutti i valori possibili. I decimali usano una piccola tolleranza.
+
+![Gioca: differenza tra richiesto e ottenuto](screenshots/13-gioca-risultato-errato.png)
 
 Non c'è un conto alla rovescia. Le sfide sono tutte accessibili. Completamenti
 e bozze sono separati per missione, difficoltà e lingua; l'ordine delle tessere
@@ -136,7 +145,7 @@ quattro spazi; Shift+rotella per scorrere orizzontalmente.
 
 Tre temi: Notte, Giorno, Contrasto. Testo del codice e delle spiegazioni
 regolabile; velocità 0,5×, 1×, 2× e 3×. Aprire schede, banco o impostazioni
-mette in pausa. Riprendi con Esegui, oppure Riprendi il nastro in Impara.
+mette in pausa. In Impara usa **Riprendi il passaggio**; nei quiz usa **Rivedi l’esecuzione**.
 I tempi dell'animazione sono didattici, non misure di prestazione.
 
 ## Sorgenti, verifiche e distribuzione
@@ -157,7 +166,7 @@ l'eseguibile e crea i due ZIP. L'eseguibile resta nella radice del progetto.
 Gli archivi escludono progressi personali, cache e file intermedi di build.
 
 `engine.py` gestisce valori e istruzioni; `missions.py` le consegne e le
-verifiche; `lessons.py` i contenuti; `main.py`, `scene.py` e `ui.py` l'interfaccia;
+verifiche; `lessons.py` i contenuti; `main.py`, `experience.py`, `scene.py` e `ui.py` l'interfaccia;
 `storage.py` i salvataggi. La proposta didattica è in `PIANO.md`.
 
 ## Riferimenti

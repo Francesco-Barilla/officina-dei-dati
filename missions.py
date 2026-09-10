@@ -1,7 +1,7 @@
 """Original challenges: finite cases and independently specified outcomes."""
 from dataclasses import dataclass
 import math
-from engine import CodeError, Value, assign as a, execute, generate, output as o, set_var as s, value
+from engine import CodeError, Value, assign as a, display, execute, generate, output as o, run, set_var as s, type_name, value
 
 DIFFICULTIES = ('Facile', 'Medio', 'Difficile')
 GROUPS = ('Tutte', 'Primi passi', 'Dati e calcoli', 'Testo e logica', 'Ordine e memoria')
@@ -36,7 +36,7 @@ class Mission:
     def starter(self, language, difficulty):
         comment = '# ' if language == 'Python' else '// '
         if difficulty == 'Difficile':
-            return comment + 'Costruisci il programma. Ingressi e comandi sono nella scheda Dati e comandi.\n'
+            return comment + 'Costruisci il programma. Ingressi e comandi sono nella scheda Comandi e tipi.\n'
         lines = self.solution(language).splitlines()
         # One missing calculation/output; leave dependencies visible.
         index = next((i for i, node in enumerate(self.instructions) if node.target and not node.kind), len(lines) - 1)
@@ -171,6 +171,16 @@ class Review:
     passed: int
     total: int
     case: object = None
+    rows: tuple = ()
+    error_line: int = 0
+
+
+@dataclass(frozen=True)
+class CheckRow:
+    label: str
+    expected: str
+    actual: str
+    ok: bool
 
 
 def same(actual, expected, language):
@@ -180,27 +190,52 @@ def same(actual, expected, language):
     return actual.kind == item.kind and actual.data == expected
 
 
+def compare_case(mission, code, language, case):
+    try:
+        execution = execute(code, case.inputs, language)
+    except CodeError as error:
+        execution = run((), (), language)
+        execution.error = error
+    frame = execution.frames[-1]
+    memory, outputs = mission.expected([item.data for item in case.inputs])
+    actual = dict(frame.memory)
+    def label(item):
+        return display(item, language) + ' · ' + type_name(item, language)
+    def expected_value(raw):
+        return value(raw, 32 if language in ('C', 'Java') and type(raw) is float else 64)
+    rows = []
+    for index in range(max(len(outputs), len(frame.outputs))):
+        want = expected_value(outputs[index]) if index < len(outputs) else None
+        got = frame.outputs[index] if index < len(frame.outputs) else None
+        rows.append(CheckRow(f'Uscita {index + 1}', label(want) if want is not None else 'Nessuna altra uscita',
+                             label(got) if got is not None else 'Non è stata mostrata',
+                             want is not None and got is not None and same(got, outputs[index], language)))
+    for name, raw in memory.items():
+        got = actual.get(name)
+        rows.append(CheckRow(name, label(expected_value(raw)), label(got) if got is not None else 'Variabile non creata',
+                             got is not None and same(got, raw, language)))
+    rows.append(CheckRow('Ingressi letti', str(len(case.inputs)), str(frame.consumed), frame.consumed == len(case.inputs)))
+    return execution, tuple(rows)
+
+
 def validate(mission, code, language):
-    passed, first = 0, None
+    passed, first, last_rows = 0, None, ()
     for case in mission.cases:
         try:
-            execution = execute(code, case.inputs, language)
+            execution, rows = compare_case(mission, code, language, case)
+            last_rows = rows
             if execution.error:
-                raise execution.error
-            frame = execution.frames[-1]
-            memory, outputs = mission.expected([item.data for item in case.inputs])
-            actual = dict(frame.memory)
-            okay = frame.consumed == len(case.inputs) and len(frame.outputs) == len(outputs)
-            okay = okay and all(name in actual and same(actual[name], expected, language) for name, expected in memory.items())
-            okay = okay and all(same(item, expected, language) for item, expected in zip(frame.outputs, outputs))
-            if okay:
+                if first is None:
+                    first = (case, f'Riga {execution.error.line}: {execution.error}', rows, execution.error.line)
+            elif all(row.ok for row in rows):
                 passed += 1
             elif first is None:
-                first = (case, 'Le uscite, il loro ordine, i tipi o i valori finali in memoria non corrispondono alla consegna.')
+                row = next(row for row in rows if not row.ok)
+                first = (case, f'{row.label}: serve {row.expected}; hai ottenuto {row.actual}.', rows, 0)
         except CodeError as error:
             if first is None:
-                first = (case, f'Riga {error.line}: {error}')
+                first = (case, f'Riga {error.line}: {error}', (), error.line)
     total = len(mission.cases)
     if first:
-        return Review(False, f'{passed}/{total} casi riusciti. Caso da ricontrollare: {first[0].label}.\n{first[1]}', passed, total, first[0])
-    return Review(True, f'Nastro collaudato: {total}/{total} casi riusciti! Hai controllato ingressi, memoria e uscite. Prova la prossima missione.', passed, total)
+        return Review(False, first[1], passed, total, first[0], first[2], first[3])
+    return Review(True, f'La tua sequenza funziona su tutti i {total} esempi della missione.', passed, total, rows=last_rows)
