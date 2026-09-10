@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+progressi_sequenza.json
+*.tmp
+smoke*.json
+.env
+.env.*
+*.pem
+*.key
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Eseguibile, icone, screenshot e ZIP fanno parte della distribuzione.
+/dist/*
+!/dist/OfficinaDati-Windows.zip
+!/dist/OfficinaDati-Sorgenti.zip
