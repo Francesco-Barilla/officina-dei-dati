@@ -6,16 +6,21 @@ from missions import c
 HOW_TO_PLAY = '''IMPARA FACENDO
 1. Guarda la riga grande a sinistra e i valori nel riquadro Da usare o Ingresso da leggere.
 2. Scegli a destra il valore che otterrai, insieme al suo tipo.
-3. Se compare Da rivedere, leggi l'indizio e riprova: il programma resta fermo. Se compare Corretto, osserva cosa ? cambiato e premi Ho capito ? passo successivo.
+3. Se compare Da rivedere, leggi l'indizio e riprova: il programma resta fermo. Se compare Corretto, osserva cosa è cambiato e premi Ho capito · passo successivo. Qui scegli una risposta; il computer esegue l'istruzione.
 Alla fine trovi la regola e l'errore da evitare. Ora costruisci tu la sequenza apre la stessa missione in Gioca. Le frecce Esempio permettono di cambiare gli ingressi.
 
-GIOCA ? FACILE
+GIOCA · FACILE
 Leggi la missione in alto e il risultato richiesto a destra. Sposta le tessere con le frecce accanto a ciascuna riga; puoi anche cliccare due tessere per scambiarle. Il programma va dall'alto verso il basso. Usa la rotella o Scorri per i programmi lunghi.
 Premi Controlla la mia sequenza. Da correggere mostra la riga problematica o un confronto tra richiesto e ottenuto. Modifica il programma e ricontrolla. Missione completata permette di andare alla prossima sfida.
 
-GIOCA ? MEDIO E DIFFICILE
-Medio: clicca nel codice e completa i ???. Difficile: scrivi il programma. Comandi e tipi contiene gli ingressi disponibili e gli esempi di sintassi.
-Controlla la mia sequenza verifica tutti gli esempi previsti dalla missione, compresi tipi, variabili, ingressi e ordine delle uscite. La voce Guarda l'esecuzione passo per passo permette invece di osservare ogni istruzione senza assegnare un completamento.
+GIOCA · MEDIO
+Premi Completa i ???. Il gioco seleziona i tre punti interrogativi: digita al loro posto la parte mancante. Se nome e = sono già scritti, inserisci solo il calcolo, il testo o il nome da copiare; se manca l'intera riga, scrivi l'istruzione completa. Leggi l'indicazione sopra l'editor e l'esempio di sintassi sotto. Usa i nomi della missione, poi premi Controlla il mio codice.
+
+GIOCA · DIFFICILE
+Premi Scrivi qui per attivare la tastiera. Scrivi le istruzioni, una per riga; Invio va a capo. Gli ingressi sono forniti dal gioco: il tuo codice li legge con i comandi leggi_*. Il risultato atteso a destra deve essere prodotto dal programma, non è una risposta da copiare nell'editor. La consegna in tre passi spiega le azioni richieste. Cosa devo scrivere? elenca i nomi, i tipi e i comandi del linguaggio selezionato.
+
+DOPO AVER SCRITTO
+Premi Controlla il mio codice oppure Ctrl+Invio. Il gioco controlla tutti gli esempi previsti dalla missione, compresi tipi, variabili, ingressi e ordine delle uscite. Se manca una parte o c'è un errore, modifica il codice e ricontrolla. Guarda l'esecuzione passo per passo permette di osservare le istruzioni senza assegnare un completamento.
 
 IL BANCO DEI TIPI
 Dalla Home scegli Banco dei tipi. Scegli int, float, string o bool; scrivi un valore e osserva la cella. Prova 5 come intero e come stringa, oppure false come booleano e come testo.
@@ -23,7 +28,7 @@ Dalla Home scegli Banco dei tipi. Scegli int, float, string o bool; scrivi un va
 SCOVA L'EQUIVOCO
 Leggi il programma a sinistra. Seleziona una previsione a destra e premi Controlla. Corretto oppure Da rivedere restano visibili insieme alla spiegazione. Una nuova scelta richiede un nuovo controllo. Rivedi l'esecuzione mostra il risultato; Spiegazione completa apre tutti i dettagli.
 
-Non c'? un cronometro. Le sfide sono tutte accessibili. Aprire schede, impostazioni o banco mette in pausa l'animazione. Le bozze restano separate per missione, lingua e difficolt?. Leggere una soluzione non modifica la bozza e non assegna completamenti.'''
+Non c'è un cronometro. Le sfide sono tutte accessibili. Aprire schede, impostazioni o banco mette in pausa l'animazione. Le bozze restano separate per missione, lingua e difficoltà. Leggere una soluzione non modifica la bozza e non assegna completamenti.'''
 
 TYPES_NOTES = '''INT · CONTARE
 Un intero rappresenta quantità senza parte frazionaria: -3, 0, 12. Le virgolette cambiano il significato: "12" è testo. I nomi della variabile non ne stabiliscono il tipo.

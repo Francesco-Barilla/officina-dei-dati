@@ -12,9 +12,10 @@ if '--smoke-test' in sys.argv:
 import pygame
 
 from engine import CodeError, Frame, LANGUAGES, TYPES, display, execute, generate, literal, source_line, type_name, value
-from lessons import HOW_TO_PLAY, MISCONCEPTIONS, QUIZZES, TYPES_NOTES, commands_text
+from lessons import HOW_TO_PLAY, MISCONCEPTIONS, QUIZZES, TYPES_NOTES
 from missions import BY_KEY, DIFFICULTIES, GROUPS, MISSIONS, compare_case, validate
 from experience import LabExperience
+from writing_guide import first_gap, meaningful_code, mission_brief, writing_issue
 from scene import TYPE_COLORS, background, conveyor, icon
 import storage
 from ui import SIZE, THEMES, Editor, font, lines, mix, palette, panel, text, wrap
@@ -248,6 +249,8 @@ class App(LabExperience):
         self.progress, self.auto = 1, False
         self.error_line = execution.error.line if execution.error else 0
         self.feedback_kind = 'correct' if self.review.success else 'wrong'
+        if not self.review.success and not self.easy:
+            self.review.message = writing_issue(self.code(), self.language) or self.review.message
         self.feedback = self.review.message
         self.reveal_frame()
         if self.review.success:
@@ -494,6 +497,18 @@ class App(LabExperience):
     def action(self, key):
         if key == 'close':
             self.modal = None
+        elif key == 'focus_code' and self.page == 'lab' and self.mode == 'game' and not self.easy and not self.modal:
+            gap = first_gap(self.editor.value, self.language)
+            if gap:
+                self.editor.anchor, self.editor.caret = gap.start, gap.end
+            else:
+                self.editor.anchor = self.editor.caret = len(self.editor.value)
+                if self.editor.value and not meaningful_code(self.editor.value) and not self.editor.value.endswith('\n'):
+                    self.editor.replace('\n')
+                    self.invalidate()
+                    self.persist()
+            self.editor.focus, self.focus = True, None
+            self.editor.reveal()
         elif key == 'trace_view':
             self.editor.focus = False
             self.start_trace(False)
@@ -506,7 +521,8 @@ class App(LabExperience):
             elif key == 'types':
                 self.open_text('Quattro tipi di dati', TYPES_NOTES)
             elif key == 'commands':
-                self.open_text('Dati e comandi · ' + self.language, commands_text(self.language))
+                self.open_text('Cosa fare e cosa scrivere · ' + self.language,
+                               mission_brief(self.mission, self.language, self.difficulty, self.code(), self.case))
             elif key == 'idea':
                 self.open_text('La regola e l’equivoco', self.mission.concept + '\n\nPROVA A CAMBIARE UN DATO\n' + self.mission.trap + '\n\n' + MISCONCEPTIONS)
             elif key == 'solution':
@@ -586,7 +602,7 @@ class App(LabExperience):
         elif key.startswith('results:'):
             self.result_scroll = max(0, self.result_scroll + int(key.split(':')[1]))
         elif key == 'program':
-            self.open_text('Il programma completo ? ' + self.language, self.mission.solution(self.language), True)
+            self.open_text('Il programma completo · ' + self.language, self.mission.solution(self.language), True)
         elif key.startswith('card:'):
             index = int(key.split(':')[1])
             if self.selected is None or self.selected == index:
@@ -710,6 +726,9 @@ class App(LabExperience):
                 self.fullscreen = not self.fullscreen
             elif event.key == pygame.K_ESCAPE:
                 self.action('close' if self.modal else 'return' if self.page == 'settings' else 'bank_back' if bank else 'home')
+            elif editable and event.key == pygame.K_RETURN and event.mod & pygame.KMOD_CTRL:
+                self.editor.focus = False
+                self.verify()
             elif self.modal and event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP, pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
                 self.modal_scroll += {pygame.K_UP: -60, pygame.K_DOWN: 60, pygame.K_PAGEUP: -400, pygame.K_PAGEDOWN: 400, pygame.K_HOME: -100000, pygame.K_END: 100000}[event.key] // (20 if self.modal == 'code' else 1)
             elif (bank or editable) and active_editor.focus:
@@ -845,6 +864,22 @@ def smoke(report, screenshots=None):
     app.open_mission('sonda')
     app.block_scroll = 10000
     capture('17-sequenza-lunga-java')
+    app.set_difficulty('Difficile')
+    app.set_language('Python')
+    app.open_mission('converti')
+    app.editor.set('')
+    capture('18-scrivi-programma')
+    app.action('commands')
+    capture('19-consegna-guidata')
+    app.action('close')
+    app.set_difficulty('Medio')
+    app.open_mission('interi')
+    app.action('focus_code')
+    capture('20-scrivi-nella-lacuna')
+    app.set_difficulty('Difficile')
+    app.editor.set('2')
+    app.verify()
+    capture('21-risultato-o-istruzioni')
     Path(report).parent.mkdir(parents=True, exist_ok=True)
     Path(report).write_text(json.dumps(dict(ok=True, missions=len(MISSIONS), quizzes=len(QUIZZES), languages=list(LANGUAGES), render_checks=checks)), encoding='utf-8')
 

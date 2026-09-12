@@ -34,9 +34,8 @@ class Mission:
         return generate(self.instructions, language)
 
     def starter(self, language, difficulty):
-        comment = '# ' if language == 'Python' else '// '
         if difficulty == 'Difficile':
-            return comment + 'Costruisci il programma. Ingressi e comandi sono nella scheda Comandi e tipi.\n'
+            return ''
         lines = self.solution(language).splitlines()
         # One missing calculation/output; leave dependencies visible.
         index = next((i for i, node in enumerate(self.instructions) if node.target and not node.kind), len(lines) - 1)

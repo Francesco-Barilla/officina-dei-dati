@@ -5,6 +5,7 @@ from engine import LANGUAGES, display, source_line, type_name, value
 from missions import DIFFICULTIES, MISSIONS
 from scene import TYPE_COLORS
 from ui import font, mix, panel, robot, text, wrap
+from writing_guide import STEPS, example_for, first_gap, meaningful_code, writing_task
 
 
 class LabExperience:
@@ -12,7 +13,7 @@ class LabExperience:
         before = self.frames[self.frame_index]
         if target.consumed > before.consumed:
             item = self.case.inputs[before.consumed]
-            return 'Il prossimo ingresso è ' + display(item, self.language) + '. La lettura lo copia nella variabile.'
+            return 'Il gioco fornisce ' + display(item, self.language) + '. Il computer lo copia nella variabile: scegli quel valore.'
         if not target.target:
             return 'La stampa mostra il valore dell’espressione tra parentesi, senza modificarlo.'
         return 'Parti dai valori nel riquadro “Da usare”: calcola a destra di =, poi sostituisci il valore a sinistra.'
@@ -103,9 +104,13 @@ class LabExperience:
         text(s, f'{target.line:02}', (70, 365), 20, c['mint'], True, mono=True)
         self.fitted(code, pygame.Rect(117, 350, 726, 54), 27, mono=True)
         read = target.consumed > before.consumed
-        description = ('Leggi il prossimo dato e mettilo in ' + target.target + '.') if read else (
-            'Mostra il valore sullo schermo. La memoria resta com’è.' if not target.target else
-            f'Calcola l’espressione a destra di =, poi scrivi il risultato in {target.target}.')
+        description = ('Il computer leggerà il dato del gioco e lo metterà in ' + target.target + '.') if read else (
+            'Il computer mostrerà il valore sullo schermo, senza cambiare la memoria.' if not target.target else
+            f'Il computer calcolerà a destra di = e aggiornerà {target.target}. Tu prevedi il valore.')
+        if self.prediction_answered:
+            description = ('Il computer ha letto il dato del gioco e lo ha messo in ' + target.target + '.') if read else (
+                'Il computer ha mostrato il valore. La memoria non è cambiata.' if not target.target else
+                f'Il computer ha calcolato a destra di = e ha aggiornato {target.target}.')
         wrap(s, description, pygame.Rect(57, 428, 800, 53), 21, c['text'])
         left, right = pygame.Rect(55, 493, 354, 126), pygame.Rect(508, 493, 353, 126)
         for rect in (left, right):
@@ -171,7 +176,7 @@ class LabExperience:
         if finished and self.progress >= 1:
             self.draw_lesson_finish()
             return
-        text(s, '2  TOCCA A TE' if not answered else '2  RISPOSTA CORRETTA', (932, 282), 17, c['mint'], True)
+        text(s, '2  SCEGLI UNA RISPOSTA' if not answered else '2  RISPOSTA CORRETTA', (932, 282), 17, c['mint'], True)
         prompt = f'Che valore avrà {target.target}?' if target.target else 'Che cosa apparirà sullo schermo?'
         wrap(s, prompt, pygame.Rect(932, 324, 449, 76), 28, c['text'], True)
         for i, item in enumerate(self.prediction_options):
@@ -185,7 +190,7 @@ class LabExperience:
         elif answered:
             title, color = 'Corretto. Ecco cosa è cambiato.', 'mint'
         else:
-            title, color = 'Scegli il valore e il suo tipo.', 'muted'
+            title, color = 'Fai clic su una delle tre risposte.', 'muted'
         text(s, title, (932, 648), 20, c[color], True)
         wrap(s, self.feedback, pygame.Rect(932, 681, 450, 96), 19, c['text'])
         if answered:
@@ -219,26 +224,51 @@ class LabExperience:
     def draw_program_board(self):
         s, c = self.canvas, self.c
         panel(s, pygame.Rect(32, 260, 852, 589), c['panel'], radius=16)
-        text(s, '1  COSTRUISCI LA SEQUENZA', (55, 282), 17, c['mint'], True)
-        description = 'Sposta le tessere con ↑ e ↓. Il computer le esegue dall’alto al basso.' if self.easy else (
-            'Clicca nel codice e sostituisci i ??? con l’istruzione che manca.' if self.difficulty == 'Medio' else
-            'Clicca nel riquadro e scrivi il programma. Usa gli ingressi della consegna.')
-        wrap(s, description, pygame.Rect(55, 319, 806, 53), 20, c['text'])
-        self.code_rect = pygame.Rect(55, 377, 806, 370)
+        title = '1  SPOSTA LE TESSERE' if self.easy else '1  COMPLETA IL CODICE' if self.difficulty == 'Medio' else '1  SCRIVI IL CODICE'
+        text(s, title, (55, 282), 17, c['mint'], True)
+        if self.easy:
+            wrap(s, 'Usa ↑ e ↓ per cambiare l’ordine. Quando sei pronto, premi Controlla a destra.', pygame.Rect(55, 319, 806, 53), 20, c['text'])
+            self.code_rect = pygame.Rect(55, 377, 806, 370)
+        else:
+            self.draw_writing_instructions()
         if self.easy:
             self.draw_program_cards()
         else:
             self.editor.draw(s, self.code_rect, c, active=self.frame.line, error=self.error_line, size=self.state['size'] + 2, tick=self.time)
+            if not meaningful_code(self.editor.value) and not self.editor.focus:
+                text(s, 'Scrivi qui le istruzioni', (79, 438), 26, c['muted'], True)
+                wrap(s, 'Premi il pulsante Scrivi qui, poi usa la tastiera.\nPer andare a capo premi Invio.', pygame.Rect(79, 486, 735, 69), 20, c['muted'])
+            self.draw_writing_example()
         if self.easy:
             text(s, f'{len(self.order)} tessere · clicca due tessere per scambiarle.', (56, 759), 15, c['muted'])
             if len(self.order) > 5:
                 self.lab_button('cards_scroll:-1', 'Scorri ↑', (623, 753, 114, 30), active=self.block_scroll > 0, size=14)
                 self.lab_button('cards_scroll:1', 'Scorri ↓', (747, 753, 114, 30), active=self.block_scroll < len(self.order) * 74 - self.code_rect.height, size=14)
-        else:
-            text(s, 'Ctrl+A: seleziona tutto · Tab: rientro · rotella: scorri', (56, 753), 16, c['muted'])
-        self.lab_button('commands', 'Comandi e tipi', (55, 791, 226, 42), size=17)
+        self.lab_button('commands', 'Cosa devo scrivere?' if not self.easy else 'Consegna guidata', (55, 791, 226, 42), size=17)
         self.lab_button('learn', 'Fammi vedere un esempio', (293, 791, 315, 42), size=17)
         self.lab_button('solution', 'Mostra una soluzione', (620, 791, 241, 42), size=16)
+
+    def draw_writing_instructions(self):
+        s, c = self.canvas, self.c
+        gap = first_gap(self.editor.value, self.language)
+        label = 'Completa i ???' if gap else 'Scrivi qui'
+        self.lab_button('focus_code', label, (637, 274, 224, 38), selected=self.editor.focus, size=18)
+        title, instruction = writing_task(self.mission, self.editor.value, self.difficulty, self.language)
+        wrap(s, title + '\n' + instruction, pygame.Rect(55, 323, 806, 62), 18, c['text'])
+        status = f'Stai scrivendo in {self.language} · Invio va a capo · Ctrl+Invio controlla' if self.editor.focus else (
+            f'Punto da completare: riga {gap.line} · premi Completa i ???' if gap else f'Zona di scrittura · {self.language}')
+        text(s, status, (57, 389), 14, c['accent'] if self.editor.focus or gap else c['muted'])
+        self.code_rect = pygame.Rect(55, 416, 806, 240)
+
+    def draw_writing_example(self):
+        s, c = self.canvas, self.c
+        caption, sample = example_for(self.mission, self.language, self.editor.value, self.difficulty)
+        text(s, caption, (57, 670), 15, c['blue'], True)
+        for i, line in enumerate(sample):
+            self.fitted(line, pygame.Rect(58, 696 + i * 25, 797, 27), 19, mono=True)
+        if len(sample) == 1:
+            tip = 'Usa i nomi e i valori della tua missione. Questo è solo un esempio di sintassi.'
+            wrap(s, tip, pygame.Rect(58, 736, 797, 42), 16, c['muted'])
 
     def draw_program_cards(self):
         rect, s, c = self.code_rect, self.canvas, self.c
@@ -288,15 +318,16 @@ class LabExperience:
             self.lab_button('details', 'Spiegazione', (1244, 460, 140, 31), size=14)
             text(s, f'{self.review.passed}/{self.review.total} esempi riusciti', (932, 466), 16, c[color], True)
         else:
-            text(s, 'Come deve finire?', (932, 322), 27, c['text'], True)
-            wrap(s, 'Questo è il risultato da ottenere. Prima ordina o completa il programma, poi controllalo.', pygame.Rect(932, 365, 449, 80), 21, c['text'])
+            text(s, 'Che cosa deve fare il codice?', (932, 322), 24, c['text'], True)
+            instructions = '\n'.join(f'{i + 1}. {step}' for i, step in enumerate(STEPS[self.mission.key]))
+            wrap(s, instructions, pygame.Rect(932, 365, 449, 124), 18, c['text'])
         self.draw_case_goal()
         if self.review:
             self.draw_comparison()
         else:
             _, outputs = self.mission.expected([item.data for item in self.case.inputs])
             panel(s, pygame.Rect(932, 552, 452, 161), c['bg'], radius=10)
-            text(s, 'SULLO SCHERMO, IN QUESTO ORDINE', (949, 565), 13, c['blue'], True)
+            text(s, 'IL CODICE DEVE MOSTRARE, IN ORDINE', (949, 565), 13, c['blue'], True)
             for i, raw in enumerate(outputs[:4]):
                 item = value(raw, 32 if self.language in ('C', 'Java') and type(raw) is float else 64)
                 self.fitted(f'{i + 1}.  ' + display(item, self.language), pygame.Rect(949, 590 + i * 27, 418, 28), 22)
@@ -304,7 +335,8 @@ class LabExperience:
             label = 'Prossima missione →' if MISSIONS.index(self.mission) + 1 < len(MISSIONS) else 'Tutte le missioni →'
             self.lab_button('next_mission', label, (932, 733, 452, 52), primary=True, size=21)
         else:
-            self.lab_button('verify', 'Ricontrolla la sequenza' if self.review else 'Controlla la mia sequenza', (932, 733, 452, 52), primary=True, size=21)
+            label = ('Ricontrolla la sequenza' if self.review else 'Controlla la mia sequenza') if self.easy else ('Ricontrolla il mio codice' if self.review else 'Controlla il mio codice')
+            self.lab_button('verify', label, (932, 733, 452, 52), primary=True, size=21)
         self.lab_button('trace_view', 'Guarda l’esecuzione passo per passo', (932, 798, 452, 35), size=16)
 
     def draw_case_goal(self):
@@ -312,7 +344,7 @@ class LabExperience:
         self.lab_button('case:-1', '‹', (932, 499, 34, 35), active=len(self.mission.cases) > 1, size=24)
         self.lab_button('case:1', '›', (1350, 499, 34, 35), active=len(self.mission.cases) > 1, size=24)
         data = ', '.join(display(item, self.language) for item in self.case.inputs)
-        label = f'Esempio {self.case_index + 1}/{len(self.mission.cases)} · ' + ('ingressi: ' + data if data else 'senza ingressi')
+        label = f'{self.case_index + 1}/{len(self.mission.cases)} · ' + ('Dati del gioco: ' + data if data else 'Nessun dato da leggere')
         self.fitted(label, pygame.Rect(976, 499, 364, 35), 17)
 
     def draw_comparison(self):

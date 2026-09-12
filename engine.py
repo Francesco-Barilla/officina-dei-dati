@@ -282,13 +282,38 @@ def split_statements(code, language):
     return result
 
 
+def placeholder_index(code, language):
+    """Find a teaching placeholder outside quoted text and line comments."""
+    quote, escaped, index = None, False, 0
+    while index < len(code):
+        char = code[index]
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == '\\':
+                escaped = True
+            elif char == quote:
+                quote = None
+        elif char in ('"', "'"):
+            quote = char
+        elif (language == 'Python' and char == '#') or (language != 'Python' and code[index:index + 2] == '//'):
+            end = code.find('\n', index)
+            index = len(code) if end < 0 else end
+            continue
+        elif code[index:index + 3] == '???':
+            return index
+        index += 1
+    return -1
+
+
 def parse(code, language):
     if language not in LANGUAGES:
         raise CodeError('Linguaggio sconosciuto.')
     if len(code) > MAX_CODE or len(code.splitlines()) > 80:
         raise CodeError('Il laboratorio accetta al massimo 8000 caratteri e 80 righe.')
-    if '???' in code:
-        raise CodeError('Completa i punti segnati con ??? prima di eseguire.', code[:code.index('???')].count('\n') + 1)
+    gap = placeholder_index(code, language)
+    if gap >= 0:
+        raise CodeError('Completa i punti segnati con ??? prima di eseguire.', code[:gap].count('\n') + 1)
     instructions = []
     printer = {'Python': 'print', 'JavaScript': 'console.log', 'C': 'mostra', 'Java': 'System.out.println'}[language]
     for line, statement in split_statements(code, language):

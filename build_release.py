@@ -13,7 +13,7 @@ def archives():
     output = ROOT / 'dist'
     output.mkdir(exist_ok=True)
     docs = ('README.md', 'README.txt', 'LICENZE.txt', 'Avvia_Officina.cmd')
-    previews = [ROOT / 'screenshots' / name for name in ('11-impara-riprova.png', '13-gioca-risultato-errato.png')]
+    previews = [ROOT / 'screenshots' / name for name in ('11-impara-riprova.png', '13-gioca-risultato-errato.png', '20-scrivi-nella-lacuna.png')]
     packages = {
         'OfficinaDati-Windows.zip': [ROOT / 'OfficinaDati.exe'] + [ROOT / name for name in docs] + previews,
         'OfficinaDati-Sorgenti.zip': list(ROOT.glob('*.py')) + [ROOT / name for name in docs + ('requirements.txt', 'OfficinaDati.spec', 'PIANO.md', '.gitignore', '.gitattributes')] + list((ROOT / 'assets').glob('*')) + list((ROOT / 'tests').glob('*.py')) + list((ROOT / 'docs').rglob('*.md')) + list((ROOT / 'screenshots').glob('*.png')),

@@ -260,6 +260,12 @@ class Editor:
                     pygame.draw.rect(surface, mix(colors['bg'], colors['blue'], .4), (rect.x + left + (start - self.xscroll) * cw, y, (end - start) * cw, lh))
                 code_clip = surface.get_clip()
                 surface.set_clip(pygame.Rect(rect.x + left - 3, rect.y + 4, rect.width - left - 1, rect.height - 8).clip(code_clip))
+                if not readonly:
+                    start = 0
+                    while (start := line.find('???', start)) >= 0:
+                        pygame.draw.rect(surface, mix(colors['bg'], colors['accent'], .35),
+                                         (rect.x + left + (start - self.xscroll) * cw, y - 1, 3 * cw, lh - 2), border_radius=3)
+                        start += 3
                 color = colors['muted'] if line_numbers and line.lstrip().startswith(('#', '//')) else colors['accent'] if line_numbers and line.lstrip().startswith(('if ', 'elif ', 'else', '}')) else colors['text']
                 text(surface, line, (rect.x + left - self.xscroll * cw, y), size, color, mono=True)
                 if self.focus and not readonly and offset <= self.caret <= offset + len(line) and int(tick * 2) % 2 == 0:

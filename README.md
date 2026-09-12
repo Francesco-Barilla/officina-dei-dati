@@ -31,17 +31,32 @@ laboratorio è nella cartella `struttura_sequenziale`, separata dagli altri.
 - **Gioca / Facile**: sposta le tessere con le frecce accanto a ogni riga,
   oppure cliccane due per scambiarle. Rotella e **Scorri** rendono accessibili
   i programmi lunghi. Possono esistere più ordini corretti.
-- **Gioca / Medio**: completa i punti `???`. **Difficile**: scrivi il
-  frammento. **Comandi e tipi** contiene sintassi e ingressi disponibili.
+- **Gioca / Medio**: premi **Completa i ???** per selezionare la lacuna.
+  L'indicazione distingue calcolo, testo, nome da copiare e istruzione intera.
+  Scrivendo sostituisci solo la parte selezionata; il resto resta al suo posto.
+- **Gioca / Difficile**: premi **Scrivi qui** e digita il programma, una
+  istruzione per riga. L'editor parte vuoto; le bozze esistenti sono conservate.
+  **Cosa devo scrivere?** spiega la missione con i nomi e i tipi richiesti,
+  le letture e un esempio nel solo linguaggio selezionato. Un esempio di
+  sintassi con altri nomi resta visibile sotto l'editor.
 - **Scova l'equivoco**: seleziona una previsione, premi **Controlla** e leggi
   il riscontro. Il codice viene eseguito dopo il controllo; una nuova scelta
   richiede un nuovo controllo.
 
-**Controlla la mia sequenza** verifica tutti gli esempi della missione:
+**Controlla la mia sequenza**, oppure **Controlla il mio codice** nei livelli
+di scrittura, verifica tutti gli esempi della missione:
 letture, variabili richieste, tipi, valori e ordine delle uscite. Se qualcosa
 non corrisponde, mostra **Da correggere**, il primo caso problematico e i
 valori **richiesto / ottenuto**. Gli errori nel codice evidenziano la riga.
 Il risultato resta visibile finché modifichi il programma o cambi esempio.
+
+Gli **ingressi sono forniti dal gioco**: il programma deve leggerli con i
+comandi indicati. I valori attesi a destra sono ciò che il codice deve produrre.
+Se scrivi solo un valore finale, lasci l'editor vuoto o mantieni dei `???`,
+il controllo spiega quale azione manca. Nell'editor **Ctrl+Invio** controlla;
+**Invio** inserisce una nuova riga.
+
+![Medio: il pulsante seleziona esattamente dove scrivere](screenshots/20-scrivi-nella-lacuna.png)
 
 **Guarda l'esecuzione passo per passo** apre una vista distinta: puoi seguire
 le righe, vedere memoria e schermo e poi tornare al gioco. Osservare questa
@@ -166,7 +181,7 @@ l'eseguibile e crea i due ZIP. L'eseguibile resta nella radice del progetto.
 Gli archivi escludono progressi personali, cache e file intermedi di build.
 
 `engine.py` gestisce valori e istruzioni; `missions.py` le consegne e le
-verifiche; `lessons.py` i contenuti; `main.py`, `experience.py`, `scene.py` e `ui.py` l'interfaccia;
+verifiche; `lessons.py` i contenuti; `main.py`, `experience.py`, `writing_guide.py`, `scene.py` e `ui.py` l'interfaccia;
 `storage.py` i salvataggi. La proposta didattica è in `PIANO.md`.
 
 ## Riferimenti

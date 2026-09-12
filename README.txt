@@ -14,8 +14,12 @@ Cambia caso per capire come la stessa sequenza usa ingressi diversi.
 
 GIOCA
 Facile: riordina le tessere cliccandone due, oppure con le frecce.
-Medio: completa ???. Difficile: scrivi il programma.
-Controlla la mia sequenza mostra Missione completata oppure Da correggere,
+Medio: premi Completa i ???. Scrivi nella selezione il calcolo o la riga
+richiesta: la consegna distingue esattamente le due situazioni.
+Difficile: premi Scrivi qui e usa la tastiera, una istruzione per riga.
+Il gioco fornisce gli ingressi; il tuo codice deve leggerli.
+Cosa devo scrivere? mostra i tre passi, i nomi e i comandi nel tuo linguaggio.
+Controlla il mio codice (o Ctrl+Invio) mostra Missione completata oppure Da correggere,
 con il confronto richiesto/ottenuto. Controlla tutti gli esempi, i tipi e le variabili.
 Guarda l’esecuzione passo per passo permette di osservare le singole righe.
 Le missioni sono 16. Non c'è un limite di tempo.
@@ -32,7 +36,7 @@ Prima rispondi, poi guarda la traccia e il perché.
 COMANDI
 F11: schermo intero. Esc: chiudi una scheda o torna indietro.
 Rotella e frecce per scorrere le spiegazioni e i programmi lunghi.
-Editor: Ctrl+A/C/X/V, Ctrl+Z/Y, Tab, Shift+rotella.
+Editor: Ctrl+A/C/X/V, Ctrl+Z/Y, Tab, Shift+rotella. Invio va a capo.
 Schede, impostazioni e banco mettono in pausa il nastro.
 Progressi e bozze si salvano in progressi_sequenza.json accanto all'app.
 
